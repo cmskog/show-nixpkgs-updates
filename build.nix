@@ -8,6 +8,7 @@
         ./.
         {
           revision = nixos.config.system.nixos.revision;
+          nixpkgs-repository = /The/path/to/your/nixpkgs/repository;
         };
   in
     (

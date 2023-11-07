@@ -1,7 +1,15 @@
-{ config, getopt, git, writeShellScriptBin, revision } :
+{ config, getopt, git, writeShellScriptBin, revision, nixpkgs-repository ? null } :
 
-  name: branch:
+  assert builtins.isNull nixpkgs-repository
+         || builtins.isPath nixpkgs-repository;
 
+  (
+    name: branch:
+
+    assert builtins.isString name;
+    assert builtins.isString branch;
+
+    (
     writeShellScriptBin
       name
       ''
@@ -9,13 +17,23 @@
       shopt -s shift_verbose
 
       PATCH=
-      NIXPKGS_GIT=
+      NIXPKGS_GIT="${builtins.toString nixpkgs-repository}"
 
       NAME="''${0##*/}"
 
       usage()
       {
-        echo "Usage: $NAME -n <Nixpkgs git repository> [-p]" >&2
+        echo "Usage: $NAME ${
+          if builtins.isPath nixpkgs-repository
+          then
+            "["
+          else
+            ""}-n <Nixpkgs git repository>${
+          if builtins.isPath nixpkgs-repository
+          then
+            "]"
+          else
+            ""} [-p]" >&2
         exit 1
       }
 
@@ -62,7 +80,7 @@
       fi
 
       # Check that NIXPKGS_GIT is set and it is a directory and has a
-      # .git sub directory and hope for the best... :-)
+      # .git sub directory and hope for the best...
       #
       if [[  ! ( $NIXPKGS_GIT  &&  -d $NIXPKGS_GIT  &&  -d $NIXPKGS_GIT/.git )  ]]
       then
@@ -72,3 +90,5 @@
 
       ${git}/bin/git -C "$NIXPKGS_GIT" log $PATCH ${revision}..$(${git}/bin/git -C "$NIXPKGS_GIT" rev-parse --symbolic-full-name "${branch}@{upstream}")
       ''
+    )
+  )
