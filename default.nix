@@ -1,13 +1,25 @@
-{ config, getopt, git, writeShellScriptBin, revision, nixpkgs-repository ? null } :
+{
+  config,
+  getopt,
+  git,
+  writeShellScriptBin,
+  revision,
+  nixpkgs-repository ? null,
+  remote ? "origin"
+} :
 
+let
+  nonEmptyStr = str: builtins.isString str && (builtins.stringLength str > 0);
+in
   assert builtins.isNull nixpkgs-repository
          || builtins.isPath nixpkgs-repository;
+  assert nonEmptyStr remote;
 
   (
     name: branch:
 
-    assert builtins.isString name;
-    assert builtins.isString branch;
+    assert nonEmptyStr name;
+    assert nonEmptyStr branch;
 
     (
       writeShellScriptBin
@@ -89,7 +101,7 @@
         fi
 
 
-        exec ${git}/bin/git -C "$NIXPKGS_GIT" log $PATCH ${revision}..$(${git}/bin/git -C "$NIXPKGS_GIT" rev-parse --symbolic-full-name "${branch}@{upstream}")
+        exec ${git}/bin/git -C "$NIXPKGS_GIT" log $PATCH ${revision}..$(${git}/bin/git -C "$NIXPKGS_GIT" rev-parse "refs/remotes/${remote}/${branch}")
         ''
     )
   )
